@@ -276,7 +276,7 @@ export default function App() {
   }, []);
 
   // Get the appropriate text color class based on holiday status
-  const dateTextColorClass = isTodayHoliday() ? 'text-red-600' : 'text-white';
+  const dateTextColorClass = isTodayHoliday() ? 'text-red-500 stroke-white' : 'text-white';
 
   return (
     <>
