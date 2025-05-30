@@ -178,8 +178,17 @@ export default function App() {
     return currentDate.toLocaleDateString('id-ID', options);
   };
 
-  // Check if today is a holiday
+  // Check if today is a holiday or Sunday
   const isTodayHoliday = () => {
+    // Check if it's Sunday (0 = Sunday, 1 = Monday, etc.)
+    const isSunday = currentDate.getDay() === 0;
+
+    // Return true immediately if it's Sunday
+    if (isSunday) {
+      return true;
+    }
+
+    // Otherwise check for holiday as before
     if (!holidays || holidays.length === 0) return false;
 
     // Format today's date as YYYY-MM-DD
