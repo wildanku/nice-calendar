@@ -9,8 +9,9 @@ npm-debug.*
 *.mobileprovision
 *.orig.*
 web-build/
-constant.ts
 
+# Ignore sensitive constants file
+constant.ts
 
 
 ios
