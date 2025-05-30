@@ -1,5 +1,13 @@
-import { useEffect, useState } from 'react';
-import { View, Text, StatusBar, ImageBackground } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StatusBar,
+  ImageBackground,
+  ScrollView,
+  RefreshControl,
+  SafeAreaView,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 
@@ -12,19 +20,20 @@ import { useWhetherStore } from 'service/weather';
 import { UNSPLASH } from 'constant';
 
 // Unsplash API configuration
-const UNSPLASH_ACCESS_KEY = UNSPLASH.ACCESS_KEY; // Replace with your actual Unsplash API key
-const UNSPLASH_COLLECTION_ID = '317099'; // Nature collection - change to suit your preference
+const UNSPLASH_ACCESS_KEY = UNSPLASH.ACCESS_KEY;
+const UNSPLASH_COLLECTION_ID = '317099';
 
 export default function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [backgroundImage, setBackgroundImage] = useState('');
   const [isLoadingBackground, setIsLoadingBackground] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { getHolidays, holidays } = useCalendarStore();
   const { fetchWeather } = useWhetherStore();
 
   // Fetch background from Unsplash
-  const fetchBackgroundImage = async () => {
+  const fetchBackgroundImage = async (forceRefresh = false) => {
     try {
       setIsLoadingBackground(true);
 
@@ -34,7 +43,7 @@ export default function App() {
       // Check if we already have an image for today
       const cachedImageData = await AsyncStorage.getItem(`background_${today}`);
 
-      if (cachedImageData) {
+      if (cachedImageData && !forceRefresh) {
         console.log('Using cached background image');
         setBackgroundImage(JSON.parse(cachedImageData).imageUrl);
       } else {
@@ -95,6 +104,24 @@ export default function App() {
 
     return timer;
   };
+
+  // Handle pull-to-refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+
+    try {
+      // Refresh all data
+      await Promise.all([
+        fetchWeather(),
+        getHolidays(),
+        fetchBackgroundImage(true), // Force new background
+      ]);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchWeather, getHolidays]);
 
   // Update time every second
   useEffect(() => {
@@ -216,37 +243,52 @@ export default function App() {
           tint="dark"
           className="h-full w-full"
           experimentalBlurMethod="dimezisBlurView">
-          <View className="h-full w-full flex-1 items-center justify-center bg-black/10 p-5">
-            <View className="mb-12 w-full flex-row gap-3 p-8">
-              <View className="w-[64%] rounded-3xl bg-black/50 p-8">
-                <Weather />
-                <View className="items-star -mt-4 flex-row">
-                  <Text className={`text-left text-[100px] font-bold ${dateTextColorClass}`}>
-                    {`${formatDayName()},`}
-                  </Text>
-                  <View className="ml-4 flex-row items-center justify-center gap-3">
-                    <Text className={`text-[100px] font-bold ${dateTextColorClass}`}>
-                      {`${formatDayOfMonth()}`}
-                    </Text>
-                    <View>
-                      <Text className={`text-[35px] font-bold ${dateTextColorClass}`}>
-                        {`${formatMonth()}`}
+          <SafeAreaView className="flex-1">
+            <ScrollView
+              className="h-full w-full"
+              contentContainerStyle={{ flexGrow: 1 }}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  tintColor="#ffffff"
+                  title="Refreshing..."
+                  titleColor="#ffffff"
+                />
+              }>
+              <View className="flex-1 items-center justify-center bg-black/20 p-5">
+                <View className="mb-12 w-full flex-row gap-3 p-8">
+                  <View className="w-[64%] rounded-3xl bg-black/40 p-8">
+                    <Weather />
+                    <View className="items-star -mt-4 flex-row">
+                      <Text className={`text-left text-[100px] font-bold ${dateTextColorClass}`}>
+                        {`${formatDayName()},`}
                       </Text>
-                      <Text className={`-mt-2 text-[35px] font-bold ${dateTextColorClass}`}>
-                        {`${formatYear()}`}
-                      </Text>
+                      <View className="ml-4 flex-row items-center justify-center gap-3">
+                        <Text className={`text-[100px] font-bold ${dateTextColorClass}`}>
+                          {`${formatDayOfMonth()}`}
+                        </Text>
+                        <View>
+                          <Text className={`text-[35px] font-bold ${dateTextColorClass}`}>
+                            {`${formatMonth()}`}
+                          </Text>
+                          <Text className={`-mt-2 text-[35px] font-bold ${dateTextColorClass}`}>
+                            {`${formatYear()}`}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
+                    <Text className="-mt-5 text-[120px] font-bold text-white">{formatTime()}</Text>
+                  </View>
+                  <View className="h-[400px] w-[35%] rounded-3xl bg-white/80">
+                    <Calendar currentDate={new Date()} />
                   </View>
                 </View>
-                <Text className="-mt-5 text-[120px] font-bold text-white">{formatTime()}</Text>
               </View>
-              <View className="h-[400px] w-[35%] rounded-3xl bg-white/90">
-                <Calendar currentDate={new Date()} />
-              </View>
-            </View>
-          </View>
-          {/* Holiday section */}
-          <Holiday />
+            </ScrollView>
+            {/* Holiday section */}
+            <Holiday />
+          </SafeAreaView>
         </BlurView>
       </ImageBackground>
     </>
