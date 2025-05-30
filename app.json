@@ -3,28 +3,24 @@
     "name": "nice-calendar",
     "slug": "nice-calendar",
     "version": "1.0.0",
-
     "web": {
       "favicon": "./assets/icon.png"
     },
-
     "experiments": {
       "tsconfigPaths": true
     },
-
     "plugins": [],
-
     "orientation": "landscape",
     "icon": "./assets/icon.png",
-
     "userInterfaceStyle": "light",
-
     "splash": {
       "image": "./assets/splash-nicecalendar.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -32,6 +28,12 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "package": "com.buildbywildan.nicecalendar"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "7709c39c-3bc3-4ad1-8744-13709cd14eb2"
       }
     }
   }

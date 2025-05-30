@@ -7,6 +7,7 @@ import {
   ScrollView,
   RefreshControl,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
@@ -225,6 +226,44 @@ export default function App() {
     // Clear interval when component unmounts
     return () => clearInterval(weatherInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      // For Android
+      import('react-native').then(({ NativeModules }) => {
+        const { KeepScreenOn } = NativeModules;
+        if (KeepScreenOn) {
+          KeepScreenOn.activate();
+        }
+      });
+
+      return () => {
+        import('react-native').then(({ NativeModules }) => {
+          const { KeepScreenOn } = NativeModules;
+          if (KeepScreenOn) {
+            KeepScreenOn.deactivate();
+          }
+        });
+      };
+    } else if (Platform.OS === 'ios') {
+      // For iOS
+      import('react-native').then(({ NativeModules }) => {
+        const { ScreenManager } = NativeModules;
+        if (ScreenManager) {
+          ScreenManager.keepScreenOn(true);
+        }
+      });
+
+      return () => {
+        import('react-native').then(({ NativeModules }) => {
+          const { ScreenManager } = NativeModules;
+          if (ScreenManager) {
+            ScreenManager.keepScreenOn(false);
+          }
+        });
+      };
+    }
   }, []);
 
   // Get the appropriate text color class based on holiday status
