@@ -19,6 +19,7 @@ import Calendar from 'components/Calendar';
 import { useCalendarStore } from 'service/calendar';
 import { useWhetherStore } from 'service/weather';
 import { UNSPLASH } from 'constant';
+import { useKeepAwake } from 'expo-keep-awake';
 
 // Unsplash API configuration
 const UNSPLASH_ACCESS_KEY = UNSPLASH.ACCESS_KEY;
@@ -32,6 +33,8 @@ export default function App() {
 
   const { getHolidays, holidays } = useCalendarStore();
   const { fetchWeather } = useWhetherStore();
+
+  useKeepAwake();
 
   // Fetch background from Unsplash
   const fetchBackgroundImage = async (forceRefresh = false) => {
@@ -215,9 +218,19 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Fetch holidays when the app starts
+    // Fetch holidays when the app starts or when date changes
     getHolidays();
-  }, [getHolidays]);
+
+    // Get the current date in YYYY-MM-DD format
+    const todayString = currentDate.toISOString().split('T')[0];
+
+    console.log(`App: Fetching holidays for date ${todayString}`);
+
+    // We're using the date string instead of the entire currentDate object
+    // because currentDate updates every second for the clock
+    // This way the effect only runs once per day
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getHolidays, currentDate.toISOString().split('T')[0]]);
 
   useEffect(() => {
     // Fetch weather immediately when component mounts
@@ -235,44 +248,6 @@ export default function App() {
     // Clear interval when component unmounts
     return () => clearInterval(weatherInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      // For Android
-      import('react-native').then(({ NativeModules }) => {
-        const { KeepScreenOn } = NativeModules;
-        if (KeepScreenOn) {
-          KeepScreenOn.activate();
-        }
-      });
-
-      return () => {
-        import('react-native').then(({ NativeModules }) => {
-          const { KeepScreenOn } = NativeModules;
-          if (KeepScreenOn) {
-            KeepScreenOn.deactivate();
-          }
-        });
-      };
-    } else if (Platform.OS === 'ios') {
-      // For iOS
-      import('react-native').then(({ NativeModules }) => {
-        const { ScreenManager } = NativeModules;
-        if (ScreenManager) {
-          ScreenManager.keepScreenOn(true);
-        }
-      });
-
-      return () => {
-        import('react-native').then(({ NativeModules }) => {
-          const { ScreenManager } = NativeModules;
-          if (ScreenManager) {
-            ScreenManager.keepScreenOn(false);
-          }
-        });
-      };
-    }
   }, []);
 
   // Get the appropriate text color class based on holiday status

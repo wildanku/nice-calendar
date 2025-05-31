@@ -5,34 +5,59 @@ import { Holiday as HolidayType, useCalendarStore } from 'service/calendar';
 const Holiday = () => {
   const [todayHolidays, setTodayHolidays] = useState<HolidayType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentDateString, setCurrentDateString] = useState('');
 
   const { holidays } = useCalendarStore();
 
+  // Update the current date string every minute
+  useEffect(() => {
+    // Set initial date string
+    const today = new Date();
+    setCurrentDateString(today.toISOString().split('T')[0]);
+
+    // Check for date changes every minute
+    const dateCheckInterval = setInterval(() => {
+      const newDate = new Date();
+      const newDateString = newDate.toISOString().split('T')[0];
+
+      // Only update if the date has changed
+      if (newDateString !== currentDateString) {
+        setCurrentDateString(newDateString);
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(dateCheckInterval);
+  }, [currentDateString]);
+
+  // Process holidays when either the holidays array or the date changes
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
 
       try {
-        // Fetch holidays
-        const today = new Date();
-        const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD
+        // Use the tracked date string instead of creating a new Date
+        // This ensures consistency with the date tracking logic
 
         // Find all holidays for today
         const todaysHolidays = holidays.filter((h) => {
           const holidayDate = h.date.split('T')[0]; // Handle if date includes time part
-          return holidayDate === todayString;
+          return holidayDate === currentDateString;
         });
 
         setTodayHolidays(todaysHolidays);
+        console.log(`Checking holidays for ${currentDateString}, found: ${todaysHolidays.length}`);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error processing holidays:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadData();
-  }, [holidays]);
+    // Only run if we have the date string and holidays data
+    if (currentDateString && holidays) {
+      loadData();
+    }
+  }, [holidays, currentDateString]);
 
   return (
     <>
